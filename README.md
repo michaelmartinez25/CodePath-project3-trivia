@@ -1,1 +1,1 @@
-# CodePath-project3-trivia
+# ios101-project3-trivia-starter
