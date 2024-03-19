@@ -1,3 +1,40 @@
+# Project 4 - *Trivia Game*
+
+Submitted by: **Michael Martinez**
+
+**Trivia Game** is an app that features a variety of questions, covering a wide range of categories and difficulties!
+
+Time spent: **5** hours spent in total
+
+## Required Features
+
+The following **required** functionality is completed:
+
+- [x] User can view and answer at least 5 trivia questions.
+- [x] App retrieves question data from the Open Trivia Database API.
+- [x] Fetch a different set of questions if the user indicates they would like to reset the game.
+- [x] Users can see score after submitting all questions.
+- [x] True or False questions only have two options.
+
+
+The following **optional** features are to be implemented:
+
+  
+- [ ] Allow the user to choose a specific category of questions.
+- [ ] Provide the user feedback on whether each question was correct before navigating to the next.
+
+The following **additional** features are implemented:
+
+- [ ] Provide a summary screen at the end of the quiz.
+
+## Video Walkthrough
+
+[Video Demo](https://youtube.com/shorts/CTvYQmQSP80?feature=share)
+
+## Notes
+
+I had the most trouble implementing the API request to the trivia database. I used the CloudCast app source code as reference, but the APIs are used differently, so it wasn't a direct translation from one app to another.
+
 # Project 3 - Trivia App
 
 Submitted by: **Michael Martinez**
