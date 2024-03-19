@@ -29,7 +29,7 @@ The following **additional** features are implemented:
 
 ## Video Walkthrough
 
-[Video Demo](https://youtube.com/shorts/CTvYQmQSP80?feature=share)
+[Video Demo](https://youtu.be/qfOp2FoyvpU)
 
 ## Notes
 
