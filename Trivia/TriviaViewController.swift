@@ -5,7 +5,26 @@
 //  Created by Michael Martinez on 3/6/24.
 //
 
+import Foundation
 import UIKit
+
+extension String {
+  // A helper function to make HTML encoded text readable.
+  // Provided by ChatGPT
+  func decodeHTML() -> String? {
+    guard let data = self.data(using: .utf8) else {
+      return nil
+    }
+    let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
+      .documentType: NSAttributedString.DocumentType.html,
+      .characterEncoding: String.Encoding.utf8.rawValue
+    ]
+    guard let attributedString = try? NSAttributedString(data: data, options: options, documentAttributes: nil) else {
+        return nil
+    }
+    return attributedString.string
+  }
+}
 
 class TriviaViewController: UIViewController {
   @IBOutlet weak var questionNumberLabel: UILabel!
@@ -22,69 +41,69 @@ class TriviaViewController: UIViewController {
   
   override func viewDidLoad() {
     super.viewDidLoad()
-    triviaQuestions = createMockQuestions()
-    configure(with: triviaQuestions[questionNumber])
-        
-  }
-    
-  private func createMockQuestions() -> [TriviaQuestion] {
-    var correctAnswerIndex = Int.random(in: 1...4)
-    let historyQuestion = TriviaQuestion(question: .history,
-                                         correctAnswer: correctAnswerIndex)
-    correctAnswerIndex = Int.random(in: 1...4)
-    let entertainmentQuestion = TriviaQuestion(question: .entertainment,
-                                         correctAnswer: correctAnswerIndex)
-    correctAnswerIndex = Int.random(in: 1...4)
-    let scienceQuestion = TriviaQuestion(question: .science,
-                                         correctAnswer: correctAnswerIndex)
-    
-    return [historyQuestion, entertainmentQuestion, scienceQuestion]
+    TriviaQuestionService.fetchQuestions() {questions in
+      self.triviaQuestions = questions
+      self.configure(with: self.triviaQuestions[0])
+    }
   }
   
   private func configure(with trivia: TriviaQuestion) {
-    questionNumberLabel.text = "\(questionNumber + 1)/3"
-    categoryLabel.text = trivia.question.category
-    questionLabel.text = trivia.question.prompt
+    questionNumberLabel.text = "\(questionNumber + 1)/5"
     
-    if (trivia.correctAnswer == 1) {
-      answerOneButton.setTitle(trivia.question.correctAnswer, for: UIControl.State.normal)
-      answerTwoButton.setTitle(trivia.question.incorrectOne, for: UIControl.State.normal)
-      answerThreeButton.setTitle(trivia.question.incorrectTwo, for: UIControl.State.normal)
-      answerFourButton.setTitle(trivia.question.incorrectThree, for: UIControl.State.normal)
-    } else if (trivia.correctAnswer == 2) {
-      answerOneButton.setTitle(trivia.question.incorrectOne, for: UIControl.State.normal)
-      answerTwoButton.setTitle(trivia.question.correctAnswer, for: UIControl.State.normal)
-      answerThreeButton.setTitle(trivia.question.incorrectTwo, for: UIControl.State.normal)
-      answerFourButton.setTitle(trivia.question.incorrectThree, for: UIControl.State.normal)
-    } else if (trivia.correctAnswer == 3) {
-      answerOneButton.setTitle(trivia.question.incorrectOne, for: UIControl.State.normal)
-      answerTwoButton.setTitle(trivia.question.incorrectTwo, for: UIControl.State.normal)
-      answerThreeButton.setTitle(trivia.question.correctAnswer, for: UIControl.State.normal)
-      answerFourButton.setTitle(trivia.question.incorrectThree, for: UIControl.State.normal)
-    } else if (trivia.correctAnswer == 4) {
-      answerOneButton.setTitle(trivia.question.incorrectOne, for: UIControl.State.normal)
-      answerTwoButton.setTitle(trivia.question.incorrectTwo, for: UIControl.State.normal)
-      answerThreeButton.setTitle(trivia.question.incorrectThree, for: UIControl.State.normal)
-      answerFourButton.setTitle(trivia.question.correctAnswer, for: UIControl.State.normal)
+    if let decodedCategory = trivia.category.decodeHTML() {
+      categoryLabel.text = decodedCategory
+    } else {
+        print("Failed to decode HTML encoded text.")
+    }
+    
+    if let decodedQuestion = trivia.question.decodeHTML() {
+      questionLabel.text = decodedQuestion
+    } else {
+        print("Failed to decode HTML encoded text.")
+    }
+    
+    if (trivia.type == "boolean") {
+      // Hide answer 3 & 4 buttons, only options are True and False
+      answerOneButton.setTitle("True", for: UIControl.State.normal)
+      answerTwoButton.setTitle("False", for:UIControl.State.normal)
+      answerThreeButton.isHidden = true
+      answerFourButton.isHidden = true
+    } else { // trivia type is multiple
+      // Reveal all buttons, shuffle answers
+      answerThreeButton.isHidden = false
+      answerFourButton.isHidden = false
+      
+      var answers = trivia.incorrectAnswers
+      answers.append(trivia.correctAnswer)
+      answers.shuffle()
+      
+      answerOneButton.setTitle(answers[0].decodeHTML(), for:UIControl.State.normal)
+      answerTwoButton.setTitle(answers[1].decodeHTML(), for:UIControl.State.normal)
+      answerThreeButton.setTitle(answers[2].decodeHTML(), for:UIControl.State.normal)
+      answerFourButton.setTitle(answers[3].decodeHTML(), for:UIControl.State.normal)
     }
   }
   
   private func resetGame() {
-    questionNumber = 0
-    numberCorrect = 0
-    triviaQuestions = createMockQuestions()
-    configure(with: triviaQuestions[questionNumber])
+    let alert = UIAlertController(title: "Game Over!", message: "Final Score \(numberCorrect)/5", preferredStyle: .alert)
+    let restartAction = UIAlertAction(title: NSLocalizedString("Restart", comment: "Default action"), style: .default) { _ in
+      self.questionNumber = 0
+      self.numberCorrect = 0
+      TriviaQuestionService.fetchQuestions() {questions in
+        self.triviaQuestions = questions
+        self.configure(with: self.triviaQuestions[0])
+      }
+    }
+    alert.addAction(restartAction)
+    self.present(alert, animated: true, completion: nil)
   }
 
   @IBAction func didTapAnswerOneButton(_ sender: UIButton) {
-    if (triviaQuestions[questionNumber].correctAnswer == 1) {
+    if (answerOneButton.titleLabel!.text == triviaQuestions[questionNumber].correctAnswer.decodeHTML()) {
       numberCorrect += 1
     }
     
     if (questionNumber == triviaQuestions.count - 1) {
-      let alert = UIAlertController(title: "Game Over!", message: "Final Score \(numberCorrect)/3", preferredStyle: .alert)
-      alert.addAction(UIAlertAction(title: NSLocalizedString("Restart", comment: "Default action"), style: .default))
-      self.present(alert, animated: true, completion: nil)
       resetGame()
     } else { // move on to next question
       questionNumber = min(triviaQuestions.count - 1, questionNumber + 1)
@@ -93,14 +112,11 @@ class TriviaViewController: UIViewController {
   }
   
   @IBAction func didTapAnswerTwoButton(_ sender: UIButton) {
-    if (triviaQuestions[questionNumber].correctAnswer == 2) {
+    if (answerTwoButton.titleLabel!.text == triviaQuestions[questionNumber].correctAnswer.decodeHTML()) {
       numberCorrect += 1
     }
     
     if (questionNumber == triviaQuestions.count - 1) {
-      let alert = UIAlertController(title: "Game Over!", message: "Final Score \(numberCorrect)/3", preferredStyle: .alert)
-      alert.addAction(UIAlertAction(title: NSLocalizedString("Restart", comment: "Default action"), style: .default))
-      self.present(alert, animated: true, completion: nil)
       resetGame()
     } else {
       questionNumber = min(triviaQuestions.count - 1, questionNumber + 1)
@@ -109,14 +125,11 @@ class TriviaViewController: UIViewController {
   }
   
   @IBAction func didTapAnswerThreeButton(_ sender: UIButton) {
-    if (triviaQuestions[questionNumber].correctAnswer == 3) {
+    if (answerThreeButton.titleLabel!.text == triviaQuestions[questionNumber].correctAnswer.decodeHTML()) {
       numberCorrect += 1
     }
     
     if (questionNumber == triviaQuestions.count - 1) {
-      let alert = UIAlertController(title: "Game Over!", message: "Final Score \(numberCorrect)/3", preferredStyle: .alert)
-      alert.addAction(UIAlertAction(title: NSLocalizedString("Restart", comment: "Default action"), style: .default))
-      self.present(alert, animated: true, completion: nil)
       resetGame()
     } else {
       questionNumber = min(triviaQuestions.count - 1, questionNumber + 1)
@@ -125,14 +138,11 @@ class TriviaViewController: UIViewController {
   }
   
   @IBAction func didTapAnswerFourButton(_ sender: UIButton) {
-    if (triviaQuestions[questionNumber].correctAnswer == 4) {
+    if (answerFourButton.titleLabel!.text == triviaQuestions[questionNumber].correctAnswer.decodeHTML()) {
       numberCorrect += 1
     }
     
     if (questionNumber == triviaQuestions.count - 1) {
-      let alert = UIAlertController(title: "Game Over!", message: "Final Score \(numberCorrect)/3", preferredStyle: .alert)
-      alert.addAction(UIAlertAction(title: NSLocalizedString("Restart", comment: "Default action"), style: .default))
-      self.present(alert, animated: true, completion: nil)
       resetGame()
     } else {
       questionNumber = min(triviaQuestions.count - 1, questionNumber + 1)
